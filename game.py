@@ -63,6 +63,8 @@ class Game:
             self.board.set_state(row_1, col_1, "matched")
             self.board.set_state(row_2, col_2, "matched")
             self.matched_pairs += 1
+            if self.is_finished() and self.end_time is None:
+                self.end_time = time.time()
             return True
         else:
             self.board.set_state(row_1, col_1, "hidden")
@@ -88,7 +90,7 @@ class Board:
 
     def __str__(self):
         letters = list(string.ascii_uppercase[:self.size])
-        header = "      " + (" "*self.word_len).join(letters)
+        header = "      " + (" "*(self.word_len + 1)).join(letters)
         rows = [header]
         for i, r in enumerate(self.board, start=1):
             row_str = "  ".join(
@@ -148,6 +150,7 @@ class DataLoader:
     def __init__(self, base_path=None):
         self.base_path = Path(base_path or Path(__file__).parent) / "data"
         self.score_path = self.base_path
+        self.score_path.mkdir(parents=True, exist_ok=True)
 
     def load_words(self, filename="memo.txt"):
         path = self.base_path / filename
@@ -164,7 +167,7 @@ class DataLoader:
 
     def load_score(self, filename="score.json"):
         path = self.score_path / filename
-        if not path.exists:
+        if not path.exists():
             return []
         with path.open("r", encoding="utf-8") as file:
             try:
@@ -179,7 +182,9 @@ class DataLoader:
 
     def save_score(self, result, filename="score.json"):
         path = self.score_path / filename
-        score = self.load_score()
+        score = self.load_score(filename)
         score.append(result)
-        with path.open("w", encoding="utf-8") as file:
+        tmp = path.with_suffix(".tmp")
+        with tmp.open("w", encoding="utf-8") as file:
             json.dump(score, file, indent=4, ensure_ascii=False)
+        tmp.replace(path)

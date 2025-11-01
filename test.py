@@ -25,7 +25,7 @@ while not game.is_finished():
         print(game.board)  # visa brädet efter vändning
         result = game.resolve_if_ready()
         if result is True:
-            print("Träff! 👏")
+            print("Träff!")
         elif result is False:
             print("Ingen träff.")
             pause()  # liten paus så man hinner se korten innan de döljs igen

@@ -1,0 +1,112 @@
+[
+    {
+        "game_id": "1761942822845-1",
+        "seed": "1",
+        "user_name": "Emil",
+        "moves": 12,
+        "difficulty": "easy",
+        "time": 60.46,
+        "finished": true,
+        "time_stamp": "2025-10-31 21:33:44"
+    },
+    {
+        "game_id": "1761943580212-169192",
+        "seed": 169192,
+        "user_name": "Emil'",
+        "moves": 100,
+        "difficulty": "medium",
+        "time": 582.74,
+        "finished": true,
+        "time_stamp": "2025-10-31 21:46:22"
+    },
+    {
+        "game_id": "1761353580212-134592",
+        "seed": 134592,
+        "user_name": "Saga",
+        "moves": 53,
+        "difficulty": "medium",
+        "time": 532.74,
+        "finished": true,
+        "time_stamp": "2025-10-31 21:53:24"
+    },
+    {
+        "game_id": "1762942822845-2",
+        "seed": "2",
+        "user_name": "Alex",
+        "moves": 18,
+        "difficulty": "easy",
+        "time": 72.31,
+        "finished": true,
+        "time_stamp": "2025-11-01 10:15:02"
+    },
+    {
+        "game_id": "1762942929999-3",
+        "seed": "3",
+        "user_name": "Lina",
+        "moves": 14,
+        "difficulty": "easy",
+        "time": 55.89,
+        "finished": true,
+        "time_stamp": "2025-11-01 11:22:48"
+    },
+    {
+        "game_id": "1762943000001-4",
+        "seed": "4",
+        "user_name": "Erik",
+        "moves": 25,
+        "difficulty": "medium",
+        "time": 210.43,
+        "finished": true,
+        "time_stamp": "2025-11-01 11:59:33"
+    },
+    {
+        "game_id": "1762943100002-5",
+        "seed": "5",
+        "user_name": "Maja",
+        "moves": 19,
+        "difficulty": "hard",
+        "time": 490.17,
+        "finished": true,
+        "time_stamp": "2025-11-01 12:22:01"
+    },
+    {
+        "game_id": "1762943200003-6",
+        "seed": "6",
+        "user_name": "Oscar",
+        "moves": 28,
+        "difficulty": "medium",
+        "time": 315.22,
+        "finished": true,
+        "time_stamp": "2025-11-01 13:10:45"
+    },
+    {
+        "game_id": "1762943300004-7",
+        "seed": "7",
+        "user_name": "Anna",
+        "moves": 17,
+        "difficulty": "easy",
+        "time": 48.65,
+        "finished": true,
+        "time_stamp": "2025-11-01 13:48:27"
+    },
+    {
+        "game_id": "1762943400005-8",
+        "seed": "8",
+        "user_name": "Niklas",
+        "moves": 40,
+        "difficulty": "hard",
+        "time": 655.92,
+        "finished": true,
+        "time_stamp": "2025-11-01 14:11:58"
+    },
+    {
+        "game_id": "1761954202756-1",
+        "seed": "1",
+        "user_name": "Empa",
+        "moves": 12,
+        "difficulty": "easy",
+        "time": 89.45,
+        "finished": true,
+        "time_stamp": "2025-11-01 00:43:43"
+    }
+]

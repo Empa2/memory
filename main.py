@@ -1,37 +1,25 @@
-from pathlib import Path
-import random
-random.seed()
+from cli import start_cli, clear_screen, pause
 
-n = 10
-filename = "memo.txt"
+def main():
+    while True:
+        clear_screen()
+        print("\nVälkommen till memory-spelet!\n"
+            "[1] För att starta terminalversionen av spelet\n"
+            "[2] För att starta GUI-versionen av spelet\n"
+            "[3] För att avsluta programmet\n")
+   
+        choice = input("Välj ett alternativ\n>>>: ")
+        if choice == "1":
+            start_cli()
+        elif choice == "2":
+            print("Inte implementerat än!")
+            pause()
+        elif choice == "3":
+            print("Avslutar promgrammet...")
+            break
+        else:
+            print("Ogiltigt val, försök igen.")
 
-base_path = Path(__file__).parent
-file_path = base_path / "data" / filename
 
-with file_path.open("r", encoding="utf-8") as f:
-    words = [line.strip() for line in f if line.strip()]
-    fixed_words = [s.encode("latin-1").decode("utf-8") for s in words]
-
-unique_words = sorted(set(fixed_words))
-selected = random.sample(unique_words, n)
-
-print(selected)
-
-
-
-Game
-moves, matched_pairs, start_time, end_time
-fält
-Game
-is_finished(), get_elapsed_time()
-metoder
-Game.match()
-self.moves += 1, self.matched_pairs += 1
-logik
-DataLoader
-save_score() och load_scores()
-nya metoder
-Board
-❌ Inget nytt behövs
-redan komplett
-
+if __name__ == "__main__":
+    main()
