@@ -131,18 +131,21 @@ class Board:
     def parse_position(self, coord):
         coord = coord.strip().upper()
         if len(coord) < 2:
-            raise ValueError("Ett")
+            raise ValueError("Ange en koordination som t.ex. A1.")
         col_part = coord[0]
         row_part = coord[1:]
 
+        if not col_part.isalpha():
+            raise ValueError("Koordinationen måste börja med en bokstav för kolumnen.")
+
         if not row_part.isdigit():
-            raise ValueError("Två")
+            raise ValueError("Koordinationen måste innehålla en siffra för raden.")
 
         row = int(row_part) - 1
         col = ord(col_part) - ord("A")
 
         if row < 0 or row >= self.size or col < 0 or col >= self.size:
-            raise ValueError("Tre")
+            raise ValueError("Koordinaten ligger utanför brädet")
         return row, col
 
 
@@ -161,6 +164,8 @@ class DataLoader:
 
     def pick_words(self, n, rng=None):
         words = self.load_words()
+        if words is None or len(words) < n:
+            raise ValueError("Inte tillräckligt med ord i ordlistan.")
         if rng is None:
             rng = random
         return rng.sample(words, n)
