@@ -16,22 +16,3 @@ unique_words = sorted(set(fixed_words))
 selected = random.sample(unique_words, n)
 
 print(selected)
-
-
-
-Game
-moves, matched_pairs, start_time, end_time
-fält
-Game
-is_finished(), get_elapsed_time()
-metoder
-Game.match()
-self.moves += 1, self.matched_pairs += 1
-logik
-DataLoader
-save_score() och load_scores()
-nya metoder
-Board
-❌ Inget nytt behövs
-redan komplett
-

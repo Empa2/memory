@@ -1,7 +1,6 @@
-from game import Game, InvalidMove, DataLoader
 import os
 import time
-
+from game import Game, InvalidMove, DataLoader
 
 def clear_screen():
     if os.name == "nt":
@@ -27,6 +26,18 @@ def get_seed():
     return seed or None
 
 
+def get_user_name():
+    while True:
+        user_name = input("Ange ditt namn för highscore-listan"
+                          " (Enter om du vill vara anonym): ").strip()
+        if len(user_name) > 15:
+            print("Namnet är för långt (max 15 tecken). Försök igen!")
+
+        elif not user_name:
+            return "Anonym"
+        else:
+            return user_name
+
 
 def prompt_coords(game):
     while True:
@@ -46,7 +57,6 @@ def parse_coords(board, coords):
         raise ValueError("Du måste ange minst en ruta.")
     coord = coords.replace(",", " ").split()
     coord = [k.strip() for k in coord if k.strip()]
-    print(coord)
     if len(coord) == 0:
         raise ValueError("Inmatningen är tom.")
     if len(coord) > 2:
@@ -76,7 +86,7 @@ def play_turn(game, coords):
         print(f"Ogiltigt drag: {e}")
         return False
 
-
+ 
 def show_highscores():
     loader = DataLoader()
     score = loader.load_score()
@@ -84,55 +94,73 @@ def show_highscores():
     finished_games = [s for s in score if s.get("finished")]
 
     finished_games_easy = sorted([s for s in finished_games if s.get("difficulty") == "easy"],
-                                 key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
 
     finished_games_medium = sorted([s for s in finished_games if s.get("difficulty") == "medium"],
-                                    key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
 
     finished_games_hard = sorted([s for s in finished_games if s.get("difficulty") == "hard"],
-                                 key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
 
-    print(f"{'Datum':^10} | {'Namn':^14} | {'Drag':^3} | {'Tid (s)':^6}")
-    print(f"{'Lätt':-^44}")
-    for s in finished_games_easy:  
-        print(f"{s['time_stamp'].split(' ')[0]:<12} {s['user_name']:<16} {s['moves']:>5} {s['time']:>8.2f}")
-
-    print(f"{'Medel':-^44}")
+    i = j = k = 0
+    print(f"{'Datum':^10} | {'Namn':^14} | {'Drag':^3} | {'Tid (s)':^6} | {'Plats':^2}")
+    print(f"{'Lätt':-^52}")
+    for s in finished_games_easy:
+        print(f"{s['time_stamp'].split(' ')[0]:<12}"
+              f"{s['user_name']:<16} {s['moves']:>5}"
+              f"{s['time']:>8.2f} {i+1:>6}")
+        i += 1
+    print(f"{'Medel':-^52}")
     for s in finished_games_medium:
-        print(f"{s['time_stamp'].split(' ')[0]:<12} {s['user_name']:<16} {s['moves']:>5} {s['time']:>8.2f}")
-
-    print(f"{'Svår':-^44}")
+        print(f"{s['time_stamp'].split(' ')[0]:<12}"
+              f"{s['user_name']:<16} {s['moves']:>5}"
+              f"{s['time']:>8.2f} {j+1:>6}")
+        j += 1
+    print(f"{'Svår':-^52}")
     for s in finished_games_hard:
-        print(f"{s['time_stamp'].split(' ')[0]:<12} {s['user_name']:<16} {s['moves']:>5} {s['time']:>8.2f}")
-
+        print(f"{s['time_stamp'].split(' ')[0]:<12}"
+              f"{s['user_name']:<16} {s['moves']:>5}"
+              f"{s['time']:>8.2f} {k+1:>6}")
+        k += 1
 
 def start_game():
     game = Game(get_seed())
     difficulty = get_difficulty()
     game.start_new_game(difficulty)
-    coords = []
     clear_screen()
     print(game.board)
+    run_game(game)
+    result = get_result(game, difficulty)
+    game.loader.save_score(result)
+    print_result(game, result)
+    print("\nResultat sparat i data/score.json")
 
-    while not game.is_finished():
 
-        coord = prompt_coords(game)
-        if coord is None:
-            break
+def run_game(game):
+    try:
+        coords = []
+        while not game.is_finished():
+            coord = prompt_coords(game)
+            if coord is None:
+                break
 
-        for i in coord:
-            ok = play_turn(game, [i])
-            if ok:
-                coords.append(i)
-        
-        if len(coords) == 2:
-            matched = game.match(coords[0], coords[1])
-            print("Bra jobbat! Du hittade ett par!" if matched else "Tyvärr, det var inget par.")
-            pause()
-            clear_screen()
-            print(game.board)
-            coords = []
+            for i in coord:
+                ok = play_turn(game, [i])
+                if ok:
+                    coords.append(i)
 
+            if len(coords) == 2:
+                matched = game.match(coords[0], coords[1])
+                print("Bra jobbat! Du hittade ett par!" if matched else "Tyvärr, det var inget par.")
+                pause()
+                clear_screen()
+                print(game.board)
+                coords = []
+    except Exception as error:
+        print(f"Ett fel uppstod: {error}")
+
+
+def get_result(game, difficulty):
     result = {
         "game_id": f"{int(time.time()*1000)}-{game.seed}",
         "seed": game.seed,
@@ -143,21 +171,28 @@ def start_game():
         "finished": game.is_finished(),
         "time_stamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
     }
-    game.loader.save_score(result)
-    print("\nResultat sparat i data/score.json")
+    return result
 
+def print_result(game, result):
 
+    difficulty = result.get("difficulty")
+    loader = DataLoader()
+    score = loader.load_score()
+    finished_games = [s for s in score if s.get("finished") and s.get("difficulty") == difficulty]
+    finished_games_sorted = sorted(finished_games, key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+    position = 1 + next((i for i, s in enumerate(finished_games_sorted)
+                         if s["game_id"] == result["game_id"]), len(finished_games_sorted))
 
-def get_user_name():
-    while True:
-        user_name = input("Ange ditt namn för highscore-listan (Enter om du vill vara anonym): ").strip()
-        if len(user_name) > 15:
-            print("Namnet är för långt (max 15 tecken). Försök igen!")
+    if game.is_finished():
+        print("\nGrattis! Du har klarat spelet!")
+        print(f"Antal drag: {result['moves']}")
+        print(f"Tid: {result['time']:.2f} sekunder")
+        print(f"Du hamnade på plats {position}, highscore-listan för svårhetsgraden '{difficulty}'.")
+    else:
+        print("\nSpelet avbröts innan det var klart.")
+        print(f"Antal drag: {result['moves']}")
+        print(f"Tid: {result['time']:.2f} sekunder")
 
-        elif not user_name:
-            return "Anonym"
-        else:
-            return user_name
 
 def start_cli():
     while True:

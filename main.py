@@ -1,5 +1,6 @@
 from cli import start_cli, clear_screen, pause
 
+
 def main():
     while True:
         clear_screen()
@@ -7,7 +8,7 @@ def main():
             "[1] För att starta terminalversionen av spelet\n"
             "[2] För att starta GUI-versionen av spelet\n"
             "[3] För att avsluta programmet\n")
-   
+
         choice = input("Välj ett alternativ\n>>>: ")
         if choice == "1":
             start_cli()

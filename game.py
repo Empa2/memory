@@ -1,17 +1,35 @@
 from pathlib import Path
+from enum import Enum
 import random
 import string
 import time
 import json
 
 
+
 class StateError(Exception):
     pass
-
 
 class InvalidMove(Exception):
     pass
 
+class GameNotStarted(Exception):
+    pass
+
+class CoordinateError(Exception):
+    pass
+
+class DifficultyError(Exception):
+    pass
+
+class CardState(Enum):
+    HIDDEN = ("hidden", "kortet är dolt")
+    FLIPPED = ("flipped", "kortet är vänt upp")
+    MATCHED = ("matched", "kortet är matchat")
+
+    def __init__(self, state, description):
+        self.state = state
+        self.description = description
 
 class Game:
     def __init__(self, seed=None):
@@ -48,9 +66,9 @@ class Game:
             raise InvalidMove("Inget aktivt spel. Starta ett nytt spel först.")
         row, col = self.board.parse_position(coord)
         state = self.board.get_state(row, col)
-        if state != "hidden":
+        if state != CardState.HIDDEN.state:
             raise InvalidMove(f"Rutan {coord} är inte dold (state='{state}').")
-        self.board.set_state(row, col, "flipped")
+        self.board.set_state(row, col, CardState.FLIPPED.state)
         return row, col
 
     def match(self, coord_1, coord_2):
@@ -60,15 +78,15 @@ class Game:
         value_2 = self.board.get_value(row_2, col_2)
         self.moves += 1
         if value_1 == value_2:
-            self.board.set_state(row_1, col_1, "matched")
-            self.board.set_state(row_2, col_2, "matched")
+            self.board.set_state(row_1, col_1, CardState.MATCHED.state)
+            self.board.set_state(row_2, col_2, CardState.MATCHED.state)
             self.matched_pairs += 1
             if self.is_finished() and self.end_time is None:
                 self.end_time = time.time()
             return True
         else:
-            self.board.set_state(row_1, col_1, "hidden")
-            self.board.set_state(row_2, col_2, "hidden")
+            self.board.set_state(row_1, col_1, CardState.HIDDEN.state)
+            self.board.set_state(row_2, col_2, CardState.HIDDEN.state)
         return False
 
     def is_finished(self):
@@ -88,17 +106,25 @@ class Board:
         self.word_len = word_len
         self.board = []
 
+
     def __str__(self):
-        letters = list(string.ascii_uppercase[:self.size])
-        header = "      " + (" "*(self.word_len + 1)).join(letters)
-        rows = [header]
-        for i, r in enumerate(self.board, start=1):
-            row_str = "  ".join(
-                (c["value"] if c["state"] != "hidden" else "-" * self.word_len).ljust(self.word_len)
-                for c in r
-            )
-            rows.append(f"{i:>2} | {row_str}")
-        return "\n".join(rows)
+        col_w = max(1, self.word_len)
+        gap = "  "
+
+        header_letters = gap.join(ch.center(col_w) for ch in string.ascii_uppercase[:self.size])
+        header = " " * 4 + header_letters
+        lines = [header]
+        for r, row in enumerate(self.board, start=1):
+            cells = []
+            for cell in row:
+                if cell["state"] == CardState.HIDDEN.state:
+                    s = "-" * col_w
+                else:
+                    s = str(cell["value"])[:col_w].ljust(col_w)
+                cells.append(s)
+            lines.append(f"{r:<2}| " + gap.join(cells))
+        return "\n".join(lines)
+
 
     def create_board(self, deck):
         board = []
@@ -106,7 +132,7 @@ class Board:
         for _ in range(self.size):
             row = []
             for _ in range(self.size):
-                cell = {"value": deck[k], "state": "hidden"}
+                cell = {"value": deck[k], "state": CardState.HIDDEN.state}
                 row.append(cell)
                 k += 1
             board.append(row)
@@ -124,7 +150,7 @@ class Board:
     def set_state(self, row, col, new_state):
         if self.board[row][col]["state"] == new_state:
             raise StateError(f"Ordet på ({row}, {col}) är redan '{new_state}'.")
-        if self.board[row][col]["state"] == "matched":
+        if self.board[row][col]["state"] == CardState.MATCHED.state:
             raise StateError(f"Ordet på ({row}, {col}) är redan matchat.")
         self.board[row][col]["state"] = new_state
 
@@ -193,3 +219,4 @@ class DataLoader:
         with tmp.open("w", encoding="utf-8") as file:
             json.dump(score, file, indent=4, ensure_ascii=False)
         tmp.replace(path)
+ 

@@ -108,5 +108,35 @@
         "time": 89.45,
         "finished": true,
         "time_stamp": "2025-11-01 00:43:43"
+    },
+    {
+        "game_id": "1762102826565-918886",
+        "seed": 918886,
+        "user_name": "Anonym",
+        "moves": 17,
+        "difficulty": "easy",
+        "time": 244.9,
+        "finished": true,
+        "time_stamp": "2025-11-02 18:00:34"
+    },
+    {
+        "game_id": "1762103711405-234265",
+        "seed": 234265,
+        "user_name": "67",
+        "moves": 17,
+        "difficulty": "easy",
+        "time": 66.69,
+        "finished": true,
+        "time_stamp": "2025-11-02 18:15:18"
+    },
+    {
+        "game_id": "1762104731372-917146",
+        "seed": 917146,
+        "user_name": "Hujjj",
+        "moves": 20,
+        "difficulty": "easy",
+        "time": 81.91,
+        "finished": true,
+        "time_stamp": "2025-11-02 18:32:18"
     }
 ]
