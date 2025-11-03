@@ -1,4 +1,14 @@
+from enum import Enum
 import string
+
+class CardState(Enum):
+    HIDDEN = ("hidden", "kortet är dolt")
+    FLIPPED = ("flipped", "kortet är vänt upp")
+    MATCHED = ("matched", "kortet är matchat")
+
+    def __init__(self, state, description):
+        self.state = state
+        self.description = description
 
 
 words = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew"]
@@ -17,7 +27,7 @@ def create_board(deck):
     for _ in range(n):
         row = []
         for _ in range(n):
-            cell = {"value": deck[k], "state": "hidden"}
+            cell = {"value": deck[k], "state": CardState.HIDDEN.state}
             row.append(cell)
             k += 1
         board.append(row)
@@ -38,7 +48,7 @@ def print_board(board, word_len):
         print(f"{letters[k]} | ", end="")
         k += 1
         for cell in row:
-            if cell["state"] == "hidden":
+            if cell["state"] == CardState.HIDDEN.state:
                 print(f"{"-" * word_len}", end=" ")
             else:
                 print(f"{cell["value"].ljust(word_len)}", end=" ")
@@ -57,7 +67,7 @@ def return_print_board(board, word_len):
     print(header)
     for i, row in enumerate(board):
         row_str = "  ".join(
-            (cell["value"] if cell["state"] != "hidden" else "-" * word_len).ljust(word_len)
+            (cell["value"] if cell["state"] != CardState.HIDDEN.state else "-" * word_len).ljust(word_len)
             for cell in row
         )
         rows.append(f"{letters[i]} | {row_str}")
@@ -80,8 +90,8 @@ world_lenght = word_len(board)
 print(return_print_board(board, world_lenght))
 
 
-board[1][1]["state"] = "flipped"
-board[2][3]["state"] = "matched"
+board[1][1]["state"] = CardState.FLIPPED.state
+board[2][3]["state"] = CardState.MATCHED.state
 
 A = return_print_board(board, word_len(board))
 print(A)

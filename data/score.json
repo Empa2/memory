@@ -138,5 +138,15 @@
         "time": 81.91,
         "finished": true,
         "time_stamp": "2025-11-02 18:32:18"
+    },
+    {
+        "game_id": "1762188401211-563645",
+        "seed": 563645,
+        "user_name": "vinnare'",
+        "moves": 15,
+        "difficulty": "easy",
+        "time": 58.8,
+        "finished": true,
+        "time_stamp": "2025-11-03 17:46:43"
     }
 ]

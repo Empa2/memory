@@ -5,21 +5,22 @@ import string
 import time
 import json
 
-
-
-class StateError(Exception):
+class MemoryGameError(Exception):
     pass
 
-class InvalidMove(Exception):
+class StateError(MemoryGameError):
     pass
 
-class GameNotStarted(Exception):
+class InvalidMove(MemoryGameError):
     pass
 
-class CoordinateError(Exception):
+class GameNotStarted(MemoryGameError):
     pass
 
-class DifficultyError(Exception):
+class CoordinateError(MemoryGameError):
+    pass
+
+class DifficultyError(MemoryGameError):
     pass
 
 class CardState(Enum):
@@ -45,7 +46,7 @@ class Game:
 
     def start_new_game(self, difficulty):
         if difficulty not in self.settings:
-            raise ValueError("Ogiltig svårhetsgrad")
+            raise DifficultyError("Ogiltig svårhetsgrad")
         size = self.settings.get(difficulty)
         n_pairs = size*size // 2
         words = self.loader.pick_words(n_pairs, rng=self.rng)
@@ -63,12 +64,12 @@ class Game:
 
     def choose_card(self, coord):
         if self.board is None:
-            raise InvalidMove("Inget aktivt spel. Starta ett nytt spel först.")
+            raise GameNotStarted("Inget aktivt spel. Starta ett nytt spel först.")
         row, col = self.board.parse_position(coord)
         state = self.board.get_state(row, col)
-        if state != CardState.HIDDEN.state:
+        if state != CardState.HIDDEN:
             raise InvalidMove(f"Rutan {coord} är inte dold (state='{state}').")
-        self.board.set_state(row, col, CardState.FLIPPED.state)
+        self.board.set_state(row, col, CardState.FLIPPED)
         return row, col
 
     def match(self, coord_1, coord_2):
@@ -76,17 +77,20 @@ class Game:
         value_1 = self.board.get_value(row_1, col_1)
         row_2, col_2 = self.board.parse_position(coord_2)
         value_2 = self.board.get_value(row_2, col_2)
+        if (self.board.get_state(row_1, col_1) != CardState.FLIPPED
+            or self.board.get_state(row_2, col_2) != CardState.FLIPPED):
+            raise InvalidMove("Båda korten måste vara uppvända innan matchning.")
         self.moves += 1
         if value_1 == value_2:
-            self.board.set_state(row_1, col_1, CardState.MATCHED.state)
-            self.board.set_state(row_2, col_2, CardState.MATCHED.state)
+            self.board.set_state(row_1, col_1, CardState.MATCHED)
+            self.board.set_state(row_2, col_2, CardState.MATCHED)
             self.matched_pairs += 1
             if self.is_finished() and self.end_time is None:
                 self.end_time = time.time()
             return True
         else:
-            self.board.set_state(row_1, col_1, CardState.HIDDEN.state)
-            self.board.set_state(row_2, col_2, CardState.HIDDEN.state)
+            self.board.set_state(row_1, col_1, CardState.HIDDEN)
+            self.board.set_state(row_2, col_2, CardState.HIDDEN)
         return False
 
     def is_finished(self):
@@ -117,7 +121,7 @@ class Board:
         for r, row in enumerate(self.board, start=1):
             cells = []
             for cell in row:
-                if cell["state"] == CardState.HIDDEN.state:
+                if cell["state"] == CardState.HIDDEN:
                     s = "-" * col_w
                 else:
                     s = str(cell["value"])[:col_w].ljust(col_w)
@@ -127,12 +131,14 @@ class Board:
 
 
     def create_board(self, deck):
+        if len(deck) != self.size * self.size:
+            raise ValueError(f"Fel antal kort: fick {len(deck)}, förväntade {self.size * self.size}.")
         board = []
         k = 0
         for _ in range(self.size):
             row = []
             for _ in range(self.size):
-                cell = {"value": deck[k], "state": CardState.HIDDEN.state}
+                cell = {"value": deck[k], "state": CardState.HIDDEN}
                 row.append(cell)
                 k += 1
             board.append(row)
@@ -149,29 +155,29 @@ class Board:
 
     def set_state(self, row, col, new_state):
         if self.board[row][col]["state"] == new_state:
-            raise StateError(f"Ordet på ({row}, {col}) är redan '{new_state}'.")
-        if self.board[row][col]["state"] == CardState.MATCHED.state:
+            raise StateError(f"Ordet på ({row}, {col}) är redan '{new_state.description}'.")
+        if self.board[row][col]["state"] == CardState.MATCHED:
             raise StateError(f"Ordet på ({row}, {col}) är redan matchat.")
         self.board[row][col]["state"] = new_state
 
     def parse_position(self, coord):
         coord = coord.strip().upper()
         if len(coord) < 2:
-            raise ValueError("Ange en koordination som t.ex. A1.")
+            raise CoordinateError("Ange en koordinat, t.ex. A1.")
         col_part = coord[0]
         row_part = coord[1:]
 
         if not col_part.isalpha():
-            raise ValueError("Koordinationen måste börja med en bokstav för kolumnen.")
+            raise CoordinateError("Koordinaten måste börja med en bokstav för kolumnen.")
 
         if not row_part.isdigit():
-            raise ValueError("Koordinationen måste innehålla en siffra för raden.")
+            raise CoordinateError("Koordinaten måste innehålla en siffra för raden.")
 
         row = int(row_part) - 1
         col = ord(col_part) - ord("A")
 
         if row < 0 or row >= self.size or col < 0 or col >= self.size:
-            raise ValueError("Koordinaten ligger utanför brädet")
+            raise CoordinateError("Koordinaten ligger utanför brädet")
         return row, col
 
 

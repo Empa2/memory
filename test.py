@@ -1,4 +1,4 @@
-from game import Game, InvalidMove, StateError
+from game import Game, InvalidMove, StateError, CoordinateError
 
 game = Game(None)
 game.start_new_game("easy")
@@ -35,7 +35,7 @@ def prompt_coords(game):
         try:
             coords = parse_coords(game.board, choice)
             return coords
-        except ValueError as e:
+        except Exception as e:
             print(f"Fel: {e}\nFörsök igen.")
 
 
@@ -53,7 +53,7 @@ def parse_coords(board, coords):
     for coordinate in coord:
         try:
             board.parse_position(coordinate)
-        except ValueError as error:
+        except Exception as error:
             raise error
 
     return coord
@@ -66,7 +66,7 @@ def play_turn(game, coords):
         game.choose_card(coords[0])
         print(game.board)
         return True
-    except InvalidMove as e:
+    except Exception as e:
         print(f"Ogiltigt drag: {e}")
         return False
     

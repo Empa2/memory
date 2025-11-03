@@ -1,0 +1,113 @@
+*************************************************************************
+*                                                                       *
+* Spec av P-uppgift: 193 Memory                                         *
+*                                                                       *
+* Skriven av: Emil Rosén                                                *
+*                                                                       *
+* Beskrivning:                                                          *
+* Programmet ska kunna hantera ett spel memory, kunna välja 3 olika     *
+* svårhetsgrader easy, medium, hard. samt kunna ladda,                  *                                *   
+* spara användaren highscore, samt kunna ladda in ord från .txt fil     *
+* Användaren ska kunna välja två rutor på brädan, och få feedback       *
+* om det är par eller inte, om det är par så visas dom orden,           *       
+*                                                                       *
+*************************************************************************
+-------------------------------- Klasser --------------------------------
+
+klassen Board: ska representera än bräda med ord
+
+attribut: 
+    size            En integer som bestämmer brädans storlek (n x n)
+    word_len        En intager som är lägden på det längsta ordet
+    board           En lista som är brädan
+
+Metoder:
+
+    def __init__(self, size, world_len, board)
+        """initierar ett board objekt"""
+
+    def __str__(self)
+        """skriver ut hur brädan ser ut, med antingen gissade eller matchade ord
+            som syns, alla gömda ord visas som "-" * word_len, """
+
+    def create_board(self)
+        """skapar en nxn bräda med tillhörande ord, och status"
+
+    
+    def set_state(self, row, col, new_state)
+        """Ändrar state hos en cell, kontrollerar att det inte är samma eller otillåtet state"""
+
+
+    def parse_coords(self, coords)
+        """gör om en koordinat från det användaren skriver in t.ex A1, till det intärna index
+            t.ex A1 -> [0][0]"""
+        
+    
+    Klass Game: Representerar spelet och äger board
+        
+        attribut: 
+        board:          None, brädan laddas in när ett nytt spel påbörjas
+        moves:          ett heltal som håller koll på antal drag
+        settings        en dict, som har svårhetsgraderna kopplade till ett heltal
+
+    def start_new_game(self, difficulty)
+        """startar ett nytt spel med svårhetsgrader som användaren har valt"""
+
+    
+    def choose_card(self, coord)
+        """Ändrar state på cellen med koordinat (coord), kollar att state är gömd"""
+
+    def match(self, coord_1, coord_2)
+        """försöker göra en match med 2 koordinater, kollar att dem båda är gissade, om dom har samma value
+           så blir dom matchade annars gömda"""
+
+
+------------------------ Datastruktur ----------------------------------
+
+brädan kommer vara en matris, (lista med listor), där varje cell kommer 
+också vara en dict, där nycklarna är "value" och "state", "value" kommer vara
+ordet som blivit tilldelat, och "state" kommer vara om den är gömd, 
+gissad eller matchad, 
+
+Efter varje spel sparas resultatet i en JSON-fil.
+Orden som används i spelet laddas från en textfil.
+
+
+--------------------------- Funktioner ---------------------------------
+
+
+def run_game()
+    """startar spelet, låter användaren få välja rutor i en loop tills spelet är klart"""
+
+def load_words(size)
+    """laddar in ord från en text fil och slumpmässigt väljer hälften av orden som ska finnas på brädan
+    och dubblar den, så det finns 2 av varje ord"""
+
+def save_score()
+    """sparar användarens highscore till en json fil"""
+
+def load_score()
+    """laddar highscore från json filen så man kan se andras highscore"""
+
+
+
+------------------------------ Algoritm --------------------------------
+
+1. en loop med 
+    1. starta nytt spel
+    2. visa highscore
+    3. Avsluta
+    loopar tills användaren vill Avsluta
+2. om användaren vill starta ett nytt spel skapas en instans av Game
+     i samband med att Game skapas så skapas ett Board-objekt som spelbräda
+     Board sköter allt med brädet att göra. Game hanteras spelets logik och
+     turordning och regler.
+
+    När spelet är klart så sparas ditt resultat och du får veta vilken plats påbörjas
+    highscore listan du kom. 
+
+3.  Om användaren vill se highscore så laddas dem in från en json fil och sorteras
+    med antal drag, men också vilken svårhetsgrad som finns.
+
+4. Vid Avsulta så bryts loopen och spelet avsultas
+

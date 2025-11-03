@@ -1,6 +1,6 @@
 import os
 import time
-from game import Game, InvalidMove, DataLoader
+from game import Game, DataLoader, MemoryGameError, CoordinateError
 
 def clear_screen():
     if os.name == "nt":
@@ -48,7 +48,7 @@ def prompt_coords(game):
         try:
             coords = parse_coords(game.board, choice)
             return coords
-        except ValueError as e:
+        except CoordinateError as e:
             print(f"Fel: {e}\nFörsök igen.")
 
 
@@ -58,17 +58,17 @@ def parse_coords(board, coords):
     coord = coords.replace(",", " ").split()
     coord = [k.strip() for k in coord if k.strip()]
     if len(coord) == 0:
-        raise ValueError("Inmatningen är tom.")
+        raise CoordinateError("Inmatningen är tom.")
     if len(coord) > 2:
-        raise ValueError("Ange högst två rutor (t.ex. 'A1 B2').")
+        raise CoordinateError("Ange högst två rutor (t.ex. 'A1 B2').")
 
     if len(coord) == 2 and coord[0] == coord[1]:
-        raise ValueError("Du kan inte välja samma ruta två gånger.")
+        raise CoordinateError("Du kan inte välja samma ruta två gånger.")
 
     for coordinate in coord:
         try:
             board.parse_position(coordinate)
-        except ValueError as error:
+        except CoordinateError as error:
             raise error
 
     return coord
@@ -82,7 +82,7 @@ def play_turn(game, coords):
         clear_screen()
         print(game.board)
         return True
-    except InvalidMove as e:
+    except MemoryGameError as e:
         print(f"Ogiltigt drag: {e}")
         return False
 
@@ -92,6 +92,10 @@ def show_highscores():
     score = loader.load_score()
 
     finished_games = [s for s in score if s.get("finished")]
+
+    if not finished_games:
+        print("finns inga tidigare higscores")
+        return
 
     finished_games_easy = sorted([s for s in finished_games if s.get("difficulty") == "easy"],
                         key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
@@ -156,7 +160,7 @@ def run_game(game):
                 clear_screen()
                 print(game.board)
                 coords = []
-    except Exception as error:
+    except MemoryGameError as error:
         print(f"Ett fel uppstod: {error}")
 
 
@@ -197,7 +201,7 @@ def print_result(game, result):
 def start_cli():
     while True:
         clear_screen()
-        print("Välkommen till Memory i terinalläge!")
+        print("Välkommen till Memory i terminalläge!")
         print("[1]. Starta nytt spel")
         print("[2]. Visa highscore")
         print("[3]. Tillbaka till huvudmenyn")
