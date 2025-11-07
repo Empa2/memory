@@ -8,6 +8,9 @@ from pathlib import Path
 from game import Game, Board, DataLoader, StateError, InvalidMove
 
 
+# GJORD AV GENERATIV - AI
+
+
 # -----------------------
 # Helpers / Fixtures
 # -----------------------

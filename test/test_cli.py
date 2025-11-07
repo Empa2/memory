@@ -3,6 +3,10 @@ import types
 import pytest
 import cli
 
+
+# GJORD AV GENERATIV - AI
+
+
 class DummyBoard:
     def __init__(self, valid_coords=None):
         self.valid_coords = set(valid_coords or [])

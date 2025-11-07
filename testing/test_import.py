@@ -1,3 +1,4 @@
+
 from pathlib import Path
 import random
 random.seed()
@@ -5,7 +6,8 @@ random.seed()
 n = 10
 filename = "memo.txt"
 
-base_path = Path(__file__).parent
+base_path = Path(__file__).parent.parent
+# .parent.parent för att det är test fil annars bara .parent!
 file_path = base_path / "data" / filename
 
 with file_path.open("r", encoding="utf-8") as f:

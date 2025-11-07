@@ -46,37 +46,15 @@ def prompt_coords(game):
             print("Avslutar spelet...")
             return None
         try:
-            coords = parse_coords(game.board, choice)
+            coords = game.parse_coords(choice)
             return coords
         except CoordinateError as e:
             print(f"Fel: {e}\nFörsök igen.")
 
 
-def parse_coords(board, coords):
-    if not coords or not coords.strip():
-        raise ValueError("Du måste ange minst en ruta.")
-    coord = coords.replace(",", " ").split()
-    coord = [k.strip() for k in coord if k.strip()]
-    if len(coord) == 0:
-        raise CoordinateError("Inmatningen är tom.")
-    if len(coord) > 2:
-        raise CoordinateError("Ange högst två rutor (t.ex. 'A1 B2').")
-
-    if len(coord) == 2 and coord[0] == coord[1]:
-        raise CoordinateError("Du kan inte välja samma ruta två gånger.")
-
-    for coordinate in coord:
-        try:
-            board.parse_position(coordinate)
-        except CoordinateError as error:
-            raise error
-
-    return coord
-
-
 def play_turn(game, coords):
     if len(coords) != 1:
-        raise ValueError(f"Tar bara emot en koordinat, du angav {coords}, ")
+        raise CoordinateError(f"Tar bara emot en koordinat, du angav {coords}")
     try:
         game.choose_card(coords[0])
         clear_screen()
@@ -86,7 +64,7 @@ def play_turn(game, coords):
         print(f"Ogiltigt drag: {e}")
         return False
 
- 
+
 def show_highscores():
     loader = DataLoader()
     score = loader.load_score()
@@ -98,13 +76,13 @@ def show_highscores():
         return
 
     finished_games_easy = sorted([s for s in finished_games if s.get("difficulty") == "easy"],
-                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
 
     finished_games_medium = sorted([s for s in finished_games if s.get("difficulty") == "medium"],
-                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
 
     finished_games_hard = sorted([s for s in finished_games if s.get("difficulty") == "hard"],
-                        key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+                        key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
 
     i = j = k = 0
     print(f"{'Datum':^10} | {'Namn':^14} | {'Drag':^3} | {'Tid (s)':^6} | {'Plats':^2}")
@@ -126,6 +104,7 @@ def show_highscores():
               f"{s['user_name']:<16} {s['moves']:>5}"
               f"{s['time']:>8.2f} {k+1:>6}")
         k += 1
+
 
 def start_game():
     game = Game(get_seed())

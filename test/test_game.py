@@ -3,6 +3,10 @@ from game import Game, Board, DataLoader, StateError, InvalidMove
 from pathlib import Path
 import time
 
+
+# GJORD AV GENERATIV - AI
+
+
 @pytest.fixture
 def game():
     return Game(seed=42)

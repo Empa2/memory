@@ -5,23 +5,30 @@ import string
 import time
 import json
 
+
 class MemoryGameError(Exception):
     pass
+
 
 class StateError(MemoryGameError):
     pass
 
+
 class InvalidMove(MemoryGameError):
     pass
+
 
 class GameNotStarted(MemoryGameError):
     pass
 
+
 class CoordinateError(MemoryGameError):
     pass
 
+
 class DifficultyError(MemoryGameError):
     pass
+
 
 class CardState(Enum):
     HIDDEN = ("hidden", "kortet är dolt")
@@ -31,6 +38,7 @@ class CardState(Enum):
     def __init__(self, state, description):
         self.state = state
         self.description = description
+
 
 class Game:
     def __init__(self, seed=None):
@@ -52,7 +60,7 @@ class Game:
         words = self.loader.pick_words(n_pairs, rng=self.rng)
         deck = words*2
         self.rng.shuffle(deck)
-        word_len = max((len(w) for w in deck), default=0)
+        word_len = max((len(w) for w in words), default=0)
 
         self.board = Board(size, word_len)
         self.board.create_board(deck)
@@ -62,13 +70,35 @@ class Game:
         self.start_time = time.time()
         self.end_time = None
 
+    def parse_coords(self, coords):
+        if self.board is None:
+            raise GameNotStarted("Inget aktivt spel. Starta ett nytt spel först.")
+        if not coords or not coords.strip():
+            raise CoordinateError("Du måste ange minst en ruta.")
+        coord = coords.replace(",", " ").split()
+        coord = [k.strip() for k in coord if k.strip()]
+        if len(coord) == 0:
+            raise CoordinateError("Inmatningen är tom.")
+        if len(coord) > 2:
+            raise CoordinateError("Ange högst två rutor (t.ex. 'A1 B2').")
+        if len(coord) == 2 and coord[0] == coord[1]:
+            # TODO: Istället för coord[0] == coord[1]:
+            # Gör (row, col) == (row, col) som är parsade
+            raise CoordinateError("Du kan inte välja samma ruta två gånger.")
+        for coordinate in coord:
+            row, col = self.board.parse_position(coordinate)
+            state = self.board.get_state(row, col)
+            if state != CardState.HIDDEN:
+                raise CoordinateError(f"Rutan {coordinate} är inte dold state='{state.state}'.")
+        return coord
+
     def choose_card(self, coord):
         if self.board is None:
             raise GameNotStarted("Inget aktivt spel. Starta ett nytt spel först.")
         row, col = self.board.parse_position(coord)
         state = self.board.get_state(row, col)
         if state != CardState.HIDDEN:
-            raise InvalidMove(f"Rutan {coord} är inte dold (state='{state}').")
+            raise InvalidMove(f"Rutan {coord} är inte dold (state='{state.state}').")
         self.board.set_state(row, col, CardState.FLIPPED)
         return row, col
 
@@ -77,8 +107,7 @@ class Game:
         value_1 = self.board.get_value(row_1, col_1)
         row_2, col_2 = self.board.parse_position(coord_2)
         value_2 = self.board.get_value(row_2, col_2)
-        if (self.board.get_state(row_1, col_1) != CardState.FLIPPED
-            or self.board.get_state(row_2, col_2) != CardState.FLIPPED):
+        if (self.board.get_state(row_1, col_1) != CardState.FLIPPED or self.board.get_state(row_2, col_2) != CardState.FLIPPED):
             raise InvalidMove("Båda korten måste vara uppvända innan matchning.")
         self.moves += 1
         if value_1 == value_2:
@@ -110,25 +139,21 @@ class Board:
         self.word_len = word_len
         self.board = []
 
-
     def __str__(self):
-        col_w = max(1, self.word_len)
-        gap = "  "
-
-        header_letters = gap.join(ch.center(col_w) for ch in string.ascii_uppercase[:self.size])
-        header = " " * 4 + header_letters
-        lines = [header]
-        for r, row in enumerate(self.board, start=1):
-            cells = []
+        letters = list(string.ascii_uppercase[:self.size])
+        header = " "*(self.word_len//2+5) + " ".join(letter.ljust(self.word_len) for letter in letters)
+        rows = [header]
+        for i, row in enumerate(self.board, start=1):
+            row_cells = []
             for cell in row:
-                if cell["state"] == CardState.HIDDEN:
-                    s = "-" * col_w
+                if cell['state'] != CardState.HIDDEN:
+                    row_string = cell["value"].ljust(self.word_len)
                 else:
-                    s = str(cell["value"])[:col_w].ljust(col_w)
-                cells.append(s)
-            lines.append(f"{r:<2}| " + gap.join(cells))
-        return "\n".join(lines)
-
+                    row_string = ("-"*self.word_len).ljust(self.word_len)
+                row_cells.append(row_string)
+            row_str = " ".join(row_cells)
+            rows.append(f"{i:<2} | {row_str}")
+        return "\n".join(rows)
 
     def create_board(self, deck):
         if len(deck) != self.size * self.size:
@@ -225,4 +250,3 @@ class DataLoader:
         with tmp.open("w", encoding="utf-8") as file:
             json.dump(score, file, indent=4, ensure_ascii=False)
         tmp.replace(path)
- 

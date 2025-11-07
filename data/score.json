@@ -148,5 +148,45 @@
         "time": 58.8,
         "finished": true,
         "time_stamp": "2025-11-03 17:46:43"
+    },
+    {
+        "game_id": "1762253919088-612547",
+        "seed": 612547,
+        "user_name": "Hugo",
+        "moves": 3,
+        "difficulty": "medium",
+        "time": 57.16,
+        "finished": false,
+        "time_stamp": "2025-11-04 11:58:44"
+    },
+    {
+        "game_id": "1762254138208-715052",
+        "seed": 715052,
+        "user_name": "bjshf",
+        "moves": 18,
+        "difficulty": "easy",
+        "time": 83.7,
+        "finished": true,
+        "time_stamp": "2025-11-04 12:02:20"
+    },
+    {
+        "game_id": "1762254990645-357276",
+        "seed": 357276,
+        "user_name": "Rizzet",
+        "moves": 47,
+        "difficulty": "medium",
+        "time": 627.55,
+        "finished": true,
+        "time_stamp": "2025-11-04 12:16:40"
+    },
+    {
+        "game_id": "1762334602543-175011",
+        "seed": 175011,
+        "user_name": "oenis",
+        "moves": 21,
+        "difficulty": "easy",
+        "time": 208.77,
+        "finished": true,
+        "time_stamp": "2025-11-05 10:23:25"
     }
 ]

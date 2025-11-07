@@ -1,3 +1,9 @@
+import os
+import sys
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(ROOT_DIR)
+
 from game import Game, InvalidMove, StateError, CoordinateError
 
 game = Game(None)
@@ -69,5 +75,5 @@ def play_turn(game, coords):
     except Exception as e:
         print(f"Ogiltigt drag: {e}")
         return False
-    
+
 run_game(game)

@@ -7,6 +7,9 @@ import cli
 from game import Game, DataLoader
 
 
+# GJORD AV GENERATIV - AI
+
+
 # -----------------------
 # Helpers
 # -----------------------
