@@ -39,6 +39,8 @@ class CardState(Enum):
         self.state = state
         self.description = description
 
+    # TODO: Ta bort, description:
+
 
 class Game:
     def __init__(self, seed=None):
@@ -179,6 +181,8 @@ class Board:
         return self.board[row][col]["state"]
 
     def set_state(self, row, col, new_state):
+        # TODO: gör self.board[row][col]["state"] via self.get_state och spara
+        # i variable så den inte ändras
         if self.board[row][col]["state"] == new_state:
             raise StateError(f"Ordet på ({row}, {col}) är redan '{new_state.description}'.")
         if self.board[row][col]["state"] == CardState.MATCHED:

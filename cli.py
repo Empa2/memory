@@ -162,7 +162,7 @@ def print_result(game, result):
     loader = DataLoader()
     score = loader.load_score()
     finished_games = [s for s in score if s.get("finished") and s.get("difficulty") == difficulty]
-    finished_games_sorted = sorted(finished_games, key=lambda x: (x.get("time", float("inf")), x.get("moves", float("inf"))))
+    finished_games_sorted = sorted(finished_games, key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
     position = 1 + next((i for i, s in enumerate(finished_games_sorted)
                          if s["game_id"] == result["game_id"]), len(finished_games_sorted))
 
