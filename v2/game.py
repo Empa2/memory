@@ -2,11 +2,34 @@ from enum import Enum, auto
 import string
 import time
 import random
+from pathlib import Path
+import json
+
+
+DIFFICULTIES = {
+    "easy": 4,
+    "medium":6,
+    "hard": 8,
+}
+ALLOWED_DIFFICULTIES = set(DIFFICULTIES.keys())
+
+REQUIRED_SCORE_FIELDS = {
+    "game_id",
+    "user_name",
+    "moves",
+    "time",
+    "difficulty",
+    "finished",
+    "timestamp",
+    "seed",
+}
+
 
 class CardState(Enum):
     HIDDEN = auto()
     FLIPPED = auto()
     MATCHED = auto()
+
 
 class GameState(Enum):
     WAIT_FIRST = auto()
@@ -14,22 +37,15 @@ class GameState(Enum):
     RESOLVING = auto()
     FINISHED = auto()
 
+
 class InvalidMove(Exception):
     pass
+
 
 class Card:
     def __init__(self, value):
         self.value = value
         self.state = CardState.HIDDEN
-
-    def is_hidden(self):
-        return self.state == CardState.HIDDEN
-    
-    def is_flipped(self):
-        return self.state == CardState.FLIPPED
-    
-    def is_matched(self):
-        return self.state == CardState.MATCHED
     
     def set_state(self, new_state):
         if self.state == CardState.MATCHED and new_state != CardState.MATCHED:
@@ -76,26 +92,20 @@ class Board:
     def all_cards(self):
         return list(self.iter_cards())
 
-    def iter_position(self):
+    def iter_positions(self):
         for row in range(self.size):
             for col in range(self.size):
                 yield row, col
 
     def hidden_positions(self):
-        return [(row, col) for (row, col) in self.iter_position() if self.board[row][col].state == CardState.HIDDEN]
+        return [(row, col) for (row, col) in self.iter_positions() if self.board[row][col].state == CardState.HIDDEN]
 
     def flipped_positions(self):
-        return [(row, col) for (row, col) in self.iter_position() if self.board[row][col].state == CardState.FLIPPED]
+        return [(row, col) for (row, col) in self.iter_positions() if self.board[row][col].state == CardState.FLIPPED]
 
     def matched_positions(self):
-        return [(row, col) for (row, col) in self.iter_position() if self.board[row][col].state == CardState.MATCHED]
+        return [(row, col) for (row, col) in self.iter_positions() if self.board[row][col].state == CardState.MATCHED]
 
-    def value_matrix(self):
-        return tuple(tuple(card.value for card in row) for row in self.board)
-
-    def state_matrix(self):
-        return tuple(tuple(card.state for card in row) for row in self.board)
-    
     def reset_flipped(self):
         for row in range(self.size):
             for col in range(self.size):
@@ -103,8 +113,22 @@ class Board:
                 if card.state == CardState.FLIPPED:
                     card.set_state(CardState.HIDDEN)
 
+    def parse_coord(self, coord):
+        coord = coord.strip().upper()
+        if len(coord) < 2:
+            raise ValueError("Ange en koordinat, t.ex. A1.")
+        col = ord(coord[0]) - ord("A")
+        row = int(coord[1:]) - 1
+
+        if not self.in_bounds(row, col):
+            raise ValueError("Koordinaten ligger utanför brädet.")
+        return row, col
+
     def __str__(self):
-        longest = max(len(card.value) for card in self.iter_cards())
+        if not self.board:
+            return "<tomt bräde>"
+
+        longest = max(len(str(card.value)) for card in self.iter_cards())
         letters = list(string.ascii_uppercase[:self.size])
         header = " "*(longest//2+5) + " ".join(letter.ljust(longest) for letter in letters)
         rows = [header]
@@ -121,8 +145,9 @@ class Board:
         return "\n".join(rows)
 
 class Game:
-    def __init__(self, board, seed=None, rng=None):
+    def __init__(self, board, difficulty, seed=None, rng=None):
         self.board = board
+        self.difficulty = difficulty
         self.seed = seed
         self.rng = rng or random.Random(seed)
 
@@ -131,6 +156,20 @@ class Game:
         self._end_ts = None
         self.moves = 0
     
+    def start_new_game(self, deck):
+        local_deck = list(deck)
+        self.rng.shuffle(local_deck)
+        self.board.create_board(local_deck)
+
+        self._state = GameState.WAIT_FIRST
+        self.moves = 0
+        self._start_ts = time.time()
+        self._end_ts = None
+
+        if self._all_pairs_matched():
+            self._state = GameState.FINISHED
+            self._end_ts = time.time()
+
     def state(self):
         return self._state
     
@@ -150,15 +189,10 @@ class Game:
     def allowed_moves(self):
         if self._state == GameState.WAIT_FIRST:
             return self.board.hidden_positions()
-        
-        if self._state == GameState.WAIT_SECOND:
-            allowed = set(self.board.hidden_positions())
-            flipped = self.board.flipped_positions()
 
-            if len(flipped) == 1:
-                allowed.discard(flipped[0])
-            
-            return list(allowed)
+        if self._state == GameState.WAIT_SECOND:
+            return self.board.hidden_positions()
+
         return []
     
     def can_flip(self, row, col):
@@ -227,3 +261,109 @@ class Game:
 
     def _all_pairs_matched(self):
         return len(self.board.matched_positions()) == self.board.size * self.board.size
+
+
+class WordRepository:
+    def __init__(self, base_path, filename="memo.txt", encoding="latin-1"):
+        self.base_path = Path(base_path)
+        self.filename = filename
+        self.encoding = encoding
+
+        self._words = None
+    
+    def load_words(self):
+        if self._words is not None:
+            return self._words
+        path = self.base_path / self.filename
+        with path.open("r", encoding=self.encoding) as f:
+            loaded_list = [line.strip() for line in f if line.strip()]
+        self._words = loaded_list
+        return self._words
+    
+    def pick_words(self, n, rng):
+        words = self.load_words()
+        if len(words) < n:
+            raise ValueError("Inte tillräckligt med ord i ordlistan.")
+        return rng.sample(words, n)
+
+
+class ScoreRepository:
+    def __init__(self, base_path, filename="score.json", allowed_difficulties=None, required_fields=None):
+        self.base_path = Path(base_path)
+        self.base_path.mkdir(parents=True, exist_ok=True)
+
+        self.path = self.base_path / filename
+
+        self.allowed_difficulties = set(allowed_difficulties or [])
+        self.required_fields = set(required_fields or [])
+
+    def load(self):
+        if not self.path.exists():
+            return []
+        
+        with self.path.open("r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                raise ValueError(f"Score filen är korrupt: {self.path}")
+            
+            if not isinstance(data, list):
+                raise ValueError("Score filen måste innehålla en lista")
+        return data
+
+    def append(self, entry):
+        self._validate_entry(entry)
+        data = self.load()
+        data.append(entry)
+
+        tmp = self.path.with_suffix(".tmp")
+
+        with tmp.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            f.flush()
+        
+        tmp.replace(self.path)
+
+
+    def _validate_entry(self, entry):
+        if self.required_fields:
+            missing = self.required_fields - set(entry.keys())
+            if missing:
+                raise ValueError(f"saknar fält i score entry {', '.join(sorted(missing))}")
+
+        if self.allowed_difficulties:
+            diff = entry.get("difficulty")
+            if diff not in self.allowed_difficulties:
+                raise ValueError(f"Ogiltigt difficulty: {diff}")
+        
+        moves = entry.get("moves")
+        if not isinstance(moves, int) or moves < 0:
+            raise ValueError("moves måste vara ett heltal >= 0")
+
+        time_val = entry.get("time")
+        if not isinstance(time_val, (int, float)) or time_val <= 0:
+            raise ValueError("time måste vara ett tal > 0 sekunder")
+        
+        finished = entry.get("finished")
+        if not isinstance(finished, bool):
+            raise ValueError("finished måste vara True eller False")
+        
+    def top(self, difficulty, limit=None):
+        if self.allowed_difficulties and difficulty not in self.allowed_difficulties:
+            raise ValueError(f"Ogiltig svårighetsgrad: {difficulty}")
+
+        records = [s for s in self.load() if s.get("finished") and s.get("difficulty") == difficulty]
+        records.sort(key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
+
+        if limit is None:
+            return records
+        return records[:limit]
+
+
+def build_deck(word_repo, n_pairs, rng):
+    if not isinstance(n_pairs, int) or n_pairs < 1:
+        raise ValueError("n_pairs måste vara ett heltal ≥ 1")
+
+    words = word_repo.pick_words(n_pairs, rng)
+    deck = [w for w in words for _ in (0, 1)]
+    return deck
