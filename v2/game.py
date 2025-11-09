@@ -38,7 +38,16 @@ class GameState(Enum):
     FINISHED = auto()
 
 
-class InvalidMove(Exception):
+class GameError(Exception):
+    pass
+
+class InvalidMove(GameError):
+    pass
+
+class CoordinateError(GameError):
+    pass
+
+class GameStateError(GameError):
     pass
 
 
@@ -46,13 +55,13 @@ class Card:
     def __init__(self, value):
         self.value = value
         self.state = CardState.HIDDEN
-    
+
     def set_state(self, new_state):
         if self.state == CardState.MATCHED and new_state != CardState.MATCHED:
-            raise ValueError("Kan inte ändra state på ett matchat kort.")
+            raise GameStateError("Kan inte ändra state på ett matchat kort.")
 
         self.state = new_state
-    
+
     def __repr__(self):
         return f"Card(value={self.value!r}, state={self.state.name})"
 
@@ -65,7 +74,7 @@ class Board:
         values = list(deck)
         expected = self.size * self.size
         if len(values) != expected:
-            raise ValueError(f"Fel antal kort: fick {len(values)}, förväntade {expected}")
+            raise GameError(f"Fel antal kort: fick {len(values)}, förväntade {expected}")
         it = iter(values)
         board = []
         for _ in range(self.size):
@@ -78,12 +87,12 @@ class Board:
 
     def get_card(self, row, col):
         if not self.in_bounds(row, col):
-            raise IndexError("Position utanför brädet.")
+            raise CoordinateError("Position utanför brädet.")
         return self.board[row][col]
 
     def in_bounds(self, row, col):
         return 0 <= row < self.size and 0 <=col < self.size
- 
+
     def iter_cards(self):
         for row in self.board:
             for card in row:
@@ -116,12 +125,12 @@ class Board:
     def parse_coord(self, coord):
         coord = coord.strip().upper()
         if len(coord) < 2:
-            raise ValueError("Ange en koordinat, t.ex. A1.")
+            raise CoordinateError("Ange en koordinat, t.ex. A1.")
         col = ord(coord[0]) - ord("A")
         row = int(coord[1:]) - 1
 
         if not self.in_bounds(row, col):
-            raise ValueError("Koordinaten ligger utanför brädet.")
+            raise CoordinateError("Koordinaten ligger utanför brädet.")
         return row, col
 
     def __str__(self):
@@ -155,7 +164,7 @@ class Game:
         self._start_ts = None
         self._end_ts = None
         self.moves = 0
-    
+
     def start_new_game(self, deck):
         local_deck = list(deck)
         self.rng.shuffle(local_deck)
@@ -163,7 +172,7 @@ class Game:
 
         self._state = GameState.WAIT_FIRST
         self.moves = 0
-        self._start_ts = time.time()
+        self._start_ts = None
         self._end_ts = None
 
         if self._all_pairs_matched():
@@ -172,20 +181,20 @@ class Game:
 
     def state(self):
         return self._state
-    
+
     def is_finished(self):
         return self._state == GameState.FINISHED
-    
+
     def time_elapsed(self):
         if self._start_ts is None:
             return 0.0
         if self._end_ts is not None:
             return self._end_ts - self._start_ts
         return time.time() - self._start_ts
-    
+
     def current_selection(self):
         return self.board.flipped_positions()
-    
+
     def allowed_moves(self):
         if self._state == GameState.WAIT_FIRST:
             return self.board.hidden_positions()
@@ -194,24 +203,24 @@ class Game:
             return self.board.hidden_positions()
 
         return []
-    
+
     def can_flip(self, row, col):
         return (row, col) in self.allowed_moves()
-    
+
     def flip(self, row, col):
         if self._state not in (GameState.WAIT_FIRST, GameState.WAIT_SECOND):
-            raise InvalidMove("Kan inte vända kort i detta läge.")
-        
+            raise GameStateError("Kan inte vända kort i detta läge.")
+
         if not self.board.in_bounds(row, col):
-            raise InvalidMove("Positionen ligger utanför brädet.")
-        
+            raise CoordinateError("Positionen ligger utanför brädet.")
+
         if not self.can_flip(row, col):
             raise InvalidMove("Ogiltigt drag just nu.")
-        
+
         card = self.board.get_card(row, col)
         if card.state != CardState.HIDDEN:
             raise InvalidMove("Kortet är inte dolt")
-        
+
         card.set_state(CardState.FLIPPED)
         if self._start_ts is None:
             self._start_ts = time.time()
@@ -222,20 +231,20 @@ class Game:
         elif len(flipped) == 2:
             self._state = GameState.RESOLVING
         else:
-            raise RuntimeError("Internt fel: fler än två kort uppvända")
+            raise GameError("Internt fel: fler än två kort uppvända")
 
     def resolve(self):
         if self._state != GameState.RESOLVING:
-            raise InvalidMove("Kan inte Resolve i detta läge")
-        
+            raise GameStateError("Kan inte Resolve i detta läge")
+
         flipped = self.board.flipped_positions()
         if len(flipped) != 2:
-            raise RuntimeError("Internt fel: resolve utan två uppvända kort")
-        
+            raise GameError("Internt fel: resolve utan två uppvända kort")
+
         (row1, col1), (row2, col2) = flipped
         card1 = self.board.get_card(row1, col1)
         card2 = self.board.get_card(row2, col2)
-        
+
         matched = (card1.value == card2.value)
 
         self.moves += 1
@@ -246,13 +255,13 @@ class Game:
 
         else:
             self.board.reset_flipped()
-        
+
         if self._all_pairs_matched():
             self._state = GameState.FINISHED
             self._end_ts = time.time()
         else:
             self._state = GameState.WAIT_FIRST
-        
+
         return {
             "matched": matched,
             "first": (row1, col1),
@@ -264,22 +273,31 @@ class Game:
 
 
 class WordRepository:
-    def __init__(self, base_path, filename="memo.txt", encoding="latin-1"):
+    def __init__(self, base_path, filename="memo.txt", encoding="utf-8"):
         self.base_path = Path(base_path)
         self.filename = filename
         self.encoding = encoding
 
         self._words = None
-    
+
     def load_words(self):
         if self._words is not None:
             return self._words
         path = self.base_path / self.filename
         with path.open("r", encoding=self.encoding) as f:
             loaded_list = [line.strip() for line in f if line.strip()]
-        self._words = loaded_list
+            mojibacke = ("Ã¥", "Ã¤", "Ã¶")
+            fixed_words = []
+            for s in loaded_list:
+                if any(marker in s for marker in mojibacke):
+                    try:
+                        s = s.encode("latin-1").decode("utf-8")
+                    except UnicodeError:
+                        pass
+                fixed_words.append(s)
+        self._words = fixed_words
         return self._words
-    
+
     def pick_words(self, n, rng):
         words = self.load_words()
         if len(words) < n:
@@ -300,13 +318,13 @@ class ScoreRepository:
     def load(self):
         if not self.path.exists():
             return []
-        
+
         with self.path.open("r", encoding="utf-8") as f:
             try:
                 data = json.load(f)
-            except json.JSONDecodeError:
-                raise ValueError(f"Score filen är korrupt: {self.path}")
-            
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Score filen är korrupt: {self.path}") from e
+
             if not isinstance(data, list):
                 raise ValueError("Score filen måste innehålla en lista")
         return data
@@ -321,7 +339,7 @@ class ScoreRepository:
         with tmp.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.flush()
-        
+
         tmp.replace(self.path)
 
 
@@ -335,7 +353,7 @@ class ScoreRepository:
             diff = entry.get("difficulty")
             if diff not in self.allowed_difficulties:
                 raise ValueError(f"Ogiltigt difficulty: {diff}")
-        
+
         moves = entry.get("moves")
         if not isinstance(moves, int) or moves < 0:
             raise ValueError("moves måste vara ett heltal >= 0")
@@ -343,11 +361,11 @@ class ScoreRepository:
         time_val = entry.get("time")
         if not isinstance(time_val, (int, float)) or time_val <= 0:
             raise ValueError("time måste vara ett tal > 0 sekunder")
-        
+
         finished = entry.get("finished")
         if not isinstance(finished, bool):
             raise ValueError("finished måste vara True eller False")
-        
+
     def top(self, difficulty, limit=None):
         if self.allowed_difficulties and difficulty not in self.allowed_difficulties:
             raise ValueError(f"Ogiltig svårighetsgrad: {difficulty}")
