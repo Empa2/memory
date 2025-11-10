@@ -6,25 +6,6 @@ from pathlib import Path
 import json
 
 
-DIFFICULTIES = {
-    "easy": 4,
-    "medium":6,
-    "hard": 8,
-}
-ALLOWED_DIFFICULTIES = set(DIFFICULTIES.keys())
-
-REQUIRED_SCORE_FIELDS = {
-    "game_id",
-    "user_name",
-    "moves",
-    "time",
-    "difficulty",
-    "finished",
-    "timestamp",
-    "seed",
-}
-
-
 class CardState(Enum):
     HIDDEN = auto()
     FLIPPED = auto()
@@ -64,6 +45,7 @@ class Card:
 
     def __repr__(self):
         return f"Card(value={self.value!r}, state={self.state.name})"
+
 
 class Board:
     def __init__(self, size):
@@ -153,6 +135,7 @@ class Board:
             rows.append(f"{i:<2} | {row_str}")
         return "\n".join(rows)
 
+
 class Game:
     def __init__(self, board, difficulty, seed=None, rng=None):
         self.board = board
@@ -167,6 +150,10 @@ class Game:
 
     def start_new_game(self, deck):
         local_deck = list(deck)
+        expected = self.board.size * self.board.size
+        if len(local_deck) != expected:
+            raise GameError(f"Fel antal kort: fick {len(local_deck)}, förväntade {expected}")
+
         self.rng.shuffle(local_deck)
         self.board.create_board(local_deck)
 
@@ -174,10 +161,6 @@ class Game:
         self.moves = 0
         self._start_ts = None
         self._end_ts = None
-
-        if self._all_pairs_matched():
-            self._state = GameState.FINISHED
-            self._end_ts = time.time()
 
     def state(self):
         return self._state
@@ -273,9 +256,10 @@ class Game:
 
 
 class WordRepository:
-    def __init__(self, base_path, filename="memo.txt", encoding="utf-8"):
-        self.base_path = Path(base_path)
-        self.filename = filename
+    def __init__(self, settings, base_path=None, filename=None, encoding="utf-8"):
+        self.settings = settings
+        self.base_path = Path(base_path or settings.data_dir)
+        self.filename = filename or settings.words_file
         self.encoding = encoding
 
         self._words = None
@@ -306,14 +290,13 @@ class WordRepository:
 
 
 class ScoreRepository:
-    def __init__(self, base_path, filename="score.json", allowed_difficulties=None, required_fields=None):
-        self.base_path = Path(base_path)
+    def __init__(self, settings, base_path=None, filename=None):
+        self.settings = settings
+        self.base_path = Path(base_path or settings.data_dir)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
+        filename = filename or settings.score_file
         self.path = self.base_path / filename
-
-        self.allowed_difficulties = set(allowed_difficulties or [])
-        self.required_fields = set(required_fields or [])
 
     def load(self):
         if not self.path.exists():
@@ -342,17 +325,13 @@ class ScoreRepository:
 
         tmp.replace(self.path)
 
-
     def _validate_entry(self, entry):
-        if self.required_fields:
-            missing = self.required_fields - set(entry.keys())
-            if missing:
-                raise ValueError(f"saknar fält i score entry {', '.join(sorted(missing))}")
+        missing = self.settings.required_score_fields - set(entry.keys())
+        if missing:
+            raise ValueError(f"saknar fält i score entry {', '.join(sorted(missing))}")
 
-        if self.allowed_difficulties:
-            diff = entry.get("difficulty")
-            if diff not in self.allowed_difficulties:
-                raise ValueError(f"Ogiltigt difficulty: {diff}")
+        if entry.get("difficulty") not in self.settings.allowed_difficulties:
+            raise ValueError(f"Ogiltig svårighetsgrad: {entry.get('difficulty')}")
 
         moves = entry.get("moves")
         if not isinstance(moves, int) or moves < 0:
@@ -367,15 +346,42 @@ class ScoreRepository:
             raise ValueError("finished måste vara True eller False")
 
     def top(self, difficulty, limit=None):
-        if self.allowed_difficulties and difficulty not in self.allowed_difficulties:
+        if self.settings.allowed_difficulties and difficulty not in self.settings.allowed_difficulties:
             raise ValueError(f"Ogiltig svårighetsgrad: {difficulty}")
 
-        records = [s for s in self.load() if s.get("finished") and s.get("difficulty") == difficulty]
-        records.sort(key=lambda x: (x.get("moves", float("inf")), x.get("time", float("inf"))))
+        records = [
+            s for s in self.load()
+            if s.get("finished") and s.get("difficulty") == difficulty]
+
+        records.sort(key=lambda x: (x.get("moves", float("inf")),
+                                    x.get("time", float("inf"))))
 
         if limit is None:
             return records
         return records[:limit]
+
+
+class Settings:
+    def __init__(
+        self,
+        difficulties=None,
+        required_score_fields=None,
+        words_file="memo.txt",
+        score_file="score.json",
+        data_dir=None,
+    ):
+
+        self.difficulties = difficulties or {"easy": 4, "medium": 6, "hard": 8}
+        self.allowed_difficulties = set(self.difficulties.keys())
+
+        self.required_score_fields = required_score_fields or {
+            "game_id", "user_name", "moves", "time",
+            "difficulty", "finished", "timestamp", "seed",
+        }
+
+        self.words_file = words_file
+        self.score_file = score_file
+        self.data_dir = Path(__file__).parent / "data" or data_dir
 
 
 def build_deck(word_repo, n_pairs, rng):
@@ -385,3 +391,20 @@ def build_deck(word_repo, n_pairs, rng):
     words = word_repo.pick_words(n_pairs, rng)
     deck = [w for w in words for _ in (0, 1)]
     return deck
+
+def start_game_for_difficulty(settings, difficulty, word_repo, seed=None, rng=None):
+    if difficulty not in settings.difficulties:
+        raise ValueError(f"Ogiltig svårighetsgrad: {difficulty}")
+    size = settings.difficulties[difficulty]
+    if size % 2 != 0:
+        raise ValueError(f"Ogiltig brädstorlek: {size} måste vara jämn")
+
+    n_pairs = (size * size) // 2
+
+    rng = rng or random.Random(seed)
+    board = Board(size)
+    deck = build_deck(word_repo, n_pairs, rng)
+
+    game = Game(board=board, difficulty=difficulty, seed=seed, rng=rng)
+    game.start_new_game(deck)
+    return game
