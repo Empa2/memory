@@ -22,11 +22,14 @@ class GameState(Enum):
 class GameError(Exception):
     pass
 
+
 class InvalidMove(GameError):
     pass
 
+
 class CoordinateError(GameError):
     pass
+
 
 class GameStateError(GameError):
     pass
@@ -52,6 +55,9 @@ class Board:
         self.size = size
         self.board = []
 
+        if self.size > 26:
+            raise GameError("Storlek över 26 inte tillåtet")
+
     def create_board(self, deck):
         values = list(deck)
         expected = self.size * self.size
@@ -73,15 +79,12 @@ class Board:
         return self.board[row][col]
 
     def in_bounds(self, row, col):
-        return 0 <= row < self.size and 0 <=col < self.size
+        return 0 <= row < self.size and 0 <= col < self.size
 
     def iter_cards(self):
         for row in self.board:
             for card in row:
                 yield card
-
-    def all_cards(self):
-        return list(self.iter_cards())
 
     def iter_positions(self):
         for row in range(self.size):
@@ -261,7 +264,6 @@ class WordRepository:
         self.base_path = Path(base_path or settings.data_dir)
         self.filename = filename or settings.words_file
         self.encoding = encoding
-
         self._words = None
 
     def load_words(self):
@@ -381,7 +383,7 @@ class Settings:
 
         self.words_file = words_file
         self.score_file = score_file
-        self.data_dir = Path(__file__).parent / "data" or data_dir
+        self.data_dir = Path(data_dir) if data_dir else Path(__file__).parent / "data"
 
 
 def build_deck(word_repo, n_pairs, rng):
@@ -391,6 +393,7 @@ def build_deck(word_repo, n_pairs, rng):
     words = word_repo.pick_words(n_pairs, rng)
     deck = [w for w in words for _ in (0, 1)]
     return deck
+
 
 def start_game_for_difficulty(settings, difficulty, word_repo, seed=None, rng=None):
     if difficulty not in settings.difficulties:
