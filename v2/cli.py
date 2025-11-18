@@ -129,9 +129,8 @@ def show_highscore(settings, score_repo):
             continue
 
         for place, entry in enumerate(records, start=1):
-            # Hantera timestamp eller time_stamp
-            ts = entry.get("timestamp") or entry.get("time_stamp", "")
-            date_only = ts.split(" ")[0] if ts else ""
+            timestamp = entry.get("timestamp")
+            date_only = timestamp.split(" ")[0] if timestamp else ""
 
             print(
                 f"{date_only:<{DATE_W}}"

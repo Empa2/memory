@@ -1,0 +1,32 @@
+[
+    {
+        "game_id": 228694084276732464,
+        "user_name": "Emil",
+        "moves": 18,
+        "time": 66.94115281105042,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-18 14:17:36",
+        "seed": 646847
+    },
+    {
+        "game_id": 663861016669838612,
+        "user_name": "Arvid",
+        "moves": 16,
+        "time": 64.1026120185852,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-18 14:29:41",
+        "seed": 898547
+    },
+    {
+        "game_id": 1047405848369212365,
+        "user_name": "Anonym",
+        "moves": 25,
+        "time": 84.87226009368896,
+        "difficulty": "medium",
+        "finished": false,
+        "timestamp": "2025-11-18 14:33:13",
+        "seed": 97448
+    }
+]
