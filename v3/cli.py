@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Any
+
 import os
 import time
 from main import (
@@ -11,15 +14,15 @@ class QuitGame(Exception):
     pass
 
 
-def clear():
+def clear() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def pause():
+def pause() -> None:
     input("Tryck [Enter] för att fortsätta...")
 
 
-def choose_difficulty(settings):
+def choose_difficulty(settings: Settings) -> str:
     while True:
         print("Välj svårigetsgrad:")
         for key in settings.difficulties:
@@ -30,7 +33,7 @@ def choose_difficulty(settings):
         print("Ogiltig svårigetsgrad")
 
 
-def ask_coord(board, prompt):
+def ask_coord(board: Board, prompt: str) -> tuple[int, int]:
     while True:
         coord = input(prompt).strip().lower()
         if coord == "q":
@@ -41,7 +44,7 @@ def ask_coord(board, prompt):
             print(e)
 
 
-def ask_valid_flip(game, board, prompt):
+def ask_valid_flip(game: Game, board: Board, prompt: str) -> tuple[int, int]:
     while True:
         row, col = ask_coord(board, prompt)
         try:
@@ -51,7 +54,7 @@ def ask_valid_flip(game, board, prompt):
             print(e)
 
 
-def get_username():
+def get_username() -> str:
     while True:
         username = input(
             "Ange ett namn för highscorelistan "
@@ -60,13 +63,14 @@ def get_username():
         if not username:
             return "Anonym"
         if len(username) <= 15:
+            # max längd 15 efter som vi ger namn 16 platser så har man lite marginal
             return username
         print("Namnet får max vara 15 tecken, försök igen.")
 
 
-def play_game(settings, word_repo):
+def play_game(settings: Settings, word_repo: WordRepository) -> Game:
     rng = RandomGen()
-    difficulty = choose_difficulty(settings) 
+    difficulty = choose_difficulty(settings)
     size = settings.difficulties[difficulty]
     n_pairs = (size*size)//2
 
@@ -96,7 +100,7 @@ def play_game(settings, word_repo):
     return game
 
 
-def save_score(username, score_repo, game):
+def save_score(username: str, score_repo: ScoreRepository, game: Game) -> dict[str, Any]:
     entry = {
         "game_id": game.rng.get() * int(time.time() * 1000),
         "user_name": username,
@@ -111,24 +115,26 @@ def save_score(username, score_repo, game):
     return entry
 
 
-def show_highscore(settings, score_repo):
+def show_highscore(settings: Settings, score_repo: ScoreRepository) -> None:
     clear()
-    print("\n=== Highscore ===\n")
+    print("\n--- Highscore ---\n")
 
-    DATE_WIDTH = 12
-    NAME_WIDTH = 16
-    MOVES_WIDTH = 6
-    TIME_WIDTH = 9
-    PLACE_WIDTH = 7
-
-    total_width = (DATE_WIDTH + NAME_WIDTH + MOVES_WIDTH + TIME_WIDTH + PLACE_WIDTH)
+    date_width = 12
+    name_width = 16
+    moves_width = 6
+    time_width = 9
+    place_width = 7
+    # testade mig fram
+    total_width = (date_width + name_width +
+                   moves_width + time_width +
+                   place_width)
 
     print(
-        f"{'Datum':<{DATE_WIDTH}}"
-        f"{'Namn':<{NAME_WIDTH}}"
-        f"{'Drag':>{MOVES_WIDTH}}"
-        f"{'Tid (s)':>{TIME_WIDTH}}"
-        f"{'Plats':>{PLACE_WIDTH}}"
+        f"{'Datum':<{date_width}}"
+        f"{'Namn':<{name_width}}"
+        f"{'Drag':>{moves_width}}"
+        f"{'Tid (s)':>{time_width}}"
+        f"{'Plats':>{place_width}}"
     )
 
     for difficulty in settings.difficulties:
@@ -146,17 +152,19 @@ def show_highscore(settings, score_repo):
             date_only = timestamp.split(" ")[0] if timestamp else ""
 
             print(
-                f"{date_only:<{DATE_WIDTH}}"
-                f"{entry['user_name']:<{NAME_WIDTH}}"
-                f"{entry['moves']:>{MOVES_WIDTH}}"
-                f"{entry['time']:>{TIME_WIDTH}.2f}"
-                f"{place:>{PLACE_WIDTH}}"
+                f"{date_only:<{date_width}}"
+                f"{entry['user_name']:<{name_width}}"
+                f"{entry['moves']:>{moves_width}}"
+                f"{entry['time']:>{time_width}.2f}"
+                f"{place:>{place_width}}"
             )
     print()
 
 
-def show_result(game, score_repo, entry):
+def show_result(game: Game, score_repo: ScoreRepository, entry: dict[str, Any]) -> None:
     difficulty = entry.get("difficulty")
+    if not isinstance(difficulty, str): # Säkerställer att difficulty är str (mypy klagar annrs)
+        raise ValueError
     finished_games = score_repo.top(difficulty)
     position = 1 + next(
         (i for i, s in enumerate(finished_games)
@@ -176,7 +184,7 @@ def show_result(game, score_repo, entry):
         print(f"Tid: {entry['time']:.2f} sekunder")
 
 
-def main():
+def main() -> None:
     settings = Settings()
     word_repo = WordRepository(settings)
     score_repo = ScoreRepository(settings)

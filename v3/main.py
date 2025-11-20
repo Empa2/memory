@@ -1,3 +1,7 @@
+from __future__ import annotations
+from collections.abc import Iterator
+from typing import Any
+
 from enum import Enum, auto
 import string
 from pathlib import Path
@@ -9,15 +13,13 @@ import time
 class CardState(Enum):
     HIDDEN = auto()
     FLIPPED = auto()
-    MATCHED = auto()
-
+    MATCHED = auto() 
 
 class GameState(Enum):
     WAIT_FIRST = auto()
     WAIT_SECOND = auto()
     RESOLVING = auto()
     FINISHED = auto()
-
 
 class GameError(Exception):
     pass
@@ -30,17 +32,17 @@ class GameStateError(GameError):
 
 
 class Game:
-    def __init__(self, board, difficulty, rng):
+    def __init__(self, board: Board, difficulty: str, rng: RandomGen) -> None:
         self.board = board
         self.difficulty = difficulty
         self.rng = rng
 
-        self._state = GameState.WAIT_FIRST
-        self._start_timestamp = None
-        self._end_timestamp = None
-        self.moves = 0
+        self._state: GameState = GameState.WAIT_FIRST
+        self._start_timestamp: float | None = None
+        self._end_timestamp: float | None = None
+        self.moves: int = 0
 
-    def start_new_game(self, deck):
+    def start_new_game(self, deck: list[str]) -> None:
         local_deck = list(deck)
         expected = self.board.size * self.board.size
         if len(local_deck) != expected:
@@ -54,23 +56,23 @@ class Game:
         self._start_timestamp = None
         self._end_timestamp = None
 
-    def state(self):
+    def state(self) -> GameState:
         return self._state
 
-    def is_finished(self):
+    def is_finished(self) -> bool:
         return self._state == GameState.FINISHED
 
-    def time_elapsed(self):
+    def time_elapsed(self) -> float:
         if self._start_timestamp is None:
             return 0.0
         if self._end_timestamp is not None:
             return self._end_timestamp - self._start_timestamp
         return time.time() - self._start_timestamp
 
-    def current_selection(self):
+    def current_selection(self) -> list[tuple[int, int]]:
         return self.board.flipped_positions()
 
-    def allowed_moves(self):
+    def allowed_moves(self) -> list[tuple[int, int]]:
         if self._state == GameState.WAIT_FIRST:
             return self.board.hidden_positions()
 
@@ -79,10 +81,10 @@ class Game:
 
         return []
 
-    def can_flip(self, row, col):
+    def can_flip(self, row: int, col: int) -> bool:
         return (row, col) in self.allowed_moves()
 
-    def flip(self, row, col):
+    def flip(self, row: int, col: int) -> None:
         if self._state not in (GameState.WAIT_FIRST, GameState.WAIT_SECOND):
             raise GameStateError("Kan inte vända kort i detta läge.")
 
@@ -104,11 +106,12 @@ class Game:
         if len(flipped) == 1:
             self._state = GameState.WAIT_SECOND
         elif len(flipped) == 2:
+            # om två kort är vända så kan man försöka matcha
             self._state = GameState.RESOLVING
         else:
             raise GameError("Internt fel: fler än två kort uppvända")
 
-    def resolve(self):
+    def resolve(self) -> dict[str, bool | tuple[int, int]]:
         if self._state != GameState.RESOLVING:
             raise GameStateError("Kan inte Resolve i detta läge")
 
@@ -132,9 +135,11 @@ class Game:
             self.board.reset_flipped()
 
         if self._all_pairs_matched():
+          # Alla kort är matchade
             self._state = GameState.FINISHED
             self._end_timestamp = time.time()
         else:
+          # Tillbaka till att vänta på första kortet igen
             self._state = GameState.WAIT_FIRST
 
         return {
@@ -143,19 +148,19 @@ class Game:
             "second": (row2, col2),
         }
 
-    def _all_pairs_matched(self):
+    def _all_pairs_matched(self) -> bool:
         return len(self.board.matched_positions()) == self.board.size * self.board.size
 
 
 class Board:
-    def __init__(self, size):
+    def __init__(self, size: int) -> None:
         self.size = size
-        self.board = []
+        self.board: list[list[Card]] = []
 
         if self.size > 26:
             raise GameError("Storlek över 26 inte tillåtet")
 
-    def create_board(self, deck):
+    def create_board(self, deck: list[str]) -> None:
         values = list(deck)
         expected = self.size * self.size
         if len(values) != expected:
@@ -170,58 +175,59 @@ class Board:
             board.append(row)
         self.board = board
 
-    def in_bounds(self, row, col):
+    def in_bounds(self, row: int, col: int) -> bool:
         return 0 <= row < self.size and 0 <= col < self.size
 
-    def get_card(self, row, col):
+    def get_card(self, row: int, col: int) -> Card:
         if not self.in_bounds(row, col):
             raise CoordinateError("Position utanför brädet.")
         return self.board[row][col]
 
-    def iter_cards(self):
+    def iter_cards(self) -> Iterator[Card]:
         for row in self.board:
             for card in row:
                 yield card
 
-    def iter_positions(self):
+    def iter_positions(self) -> Iterator[tuple[int, int]]:
         for row in range(self.size):
             for col in range(self.size):
                 yield row, col
 
-    def hidden_positions(self):
+    def hidden_positions(self) -> list[tuple[int, int]]:
         return [(row, col) for (row, col) in self.iter_positions()
                 if self.board[row][col].state == CardState.HIDDEN]
 
-    def flipped_positions(self):
+    def flipped_positions(self) -> list[tuple[int, int]]:
         return [(row, col) for (row, col) in self.iter_positions()
                 if self.board[row][col].state == CardState.FLIPPED]
 
-    def matched_positions(self):
+    def matched_positions(self) -> list[tuple[int, int]]:
         return [(row, col) for (row, col) in self.iter_positions()
                 if self.board[row][col].state == CardState.MATCHED]
 
-    def reset_flipped(self):
+    def reset_flipped(self) -> None:
         for row in range(self.size):
             for col in range(self.size):
                 card = self.board[row][col]
                 if card.state == CardState.FLIPPED:
                     card.set_state(CardState.HIDDEN)
 
-    def parse_coord(self, coord):
+    def parse_coord(self, coord: str) -> tuple[int, int]:
         coord = coord.strip().upper()
         if len(coord) < 2:
             raise CoordinateError("Ange en koordinat, t.ex. A1.")
         col = ord(coord[0]) - ord("A")
+        # Kolumnen räknas genom bokstaven: A=0, B=1,
         try:
             row = int(coord[1:]) - 1
-        except ValueError as exc:
+        except ValueError as exc: # int ger value Error fånga och ge som CoordinateError
             raise CoordinateError("Ogiltigt radnummer") from exc
 
         if not self.in_bounds(row, col):
             raise CoordinateError("Koordinaten ligger utanför brädet.")
         return row, col
 
-    def __str__(self):
+    def __str__(self) -> str:
         if not self.board:
             return "<tomt bräde>"
 
@@ -243,11 +249,11 @@ class Board:
 
 
 class Card:
-    def __init__(self, value):
-        self.value = value
-        self.state = CardState.HIDDEN
+    def __init__(self, value: str) -> None:
+        self.value:str = value
+        self.state: CardState = CardState.HIDDEN
 
-    def set_state(self, new_state):
+    def set_state(self, new_state: CardState) -> None:
         if self.state == CardState.MATCHED:
             raise GameStateError("Kan inte ändra state på ett matchat kort.")
 
@@ -256,37 +262,49 @@ class Card:
 
         self.state = new_state
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Card(value={self.value!r}, state={self.state.name})"
 
 
 class WordRepository:
-    def __init__(self, settings, base_path=None, filename=None, encoding="utf-8"):
+    def __init__(self,
+                 settings: Settings,
+                 base_path: str | Path | None = None,
+                 filename: str | None = None,
+                 encoding: str ="utf-8"
+                 ) -> None:
+
         self.settings = settings
         self.base_path = Path(base_path or settings.data_dir)
         self.filename = filename or settings.words_file
         self.encoding = encoding
-        self._words = None
+        self._words: list[str] | None = None
 
-    def load_words(self):
+    def load_words(self) -> list[str]:
         if self._words is not None:
             return self._words
         path = self.base_path / self.filename
-        with path.open("r", encoding=self.encoding) as f:
-            loaded_list = [line.strip() for line in f if line.strip()]
-            mojibacke = ("Ã¥", "Ã¤", "Ã¶")
-            fixed_words = []
-            for s in loaded_list:
-                if any(marker in s for marker in mojibacke):
-                    try:
-                        s = s.encode("latin-1").decode("utf-8")
-                    except UnicodeError:
-                        pass
-                fixed_words.append(s)
+        try:
+            with path.open("r", encoding=self.encoding) as f:
+                loaded_list = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError as e:
+            raise GameError(f"Hittade inte ordlistan: {path}") from e
+
+        mojibacke = ("Ã¥", "Ã¤", "Ã¶")
+        fixed_words = []
+        for s in loaded_list:
+            if any(marker in s for marker in mojibacke):
+                try:
+                    s = s.encode("latin-1").decode("utf-8")
+                    # Vissa ord i ordlistan innehåller inte ÅÄÖ utan andra tecken detta
+                    # fungerar som en liten work around
+                except UnicodeError:
+                    pass
+            fixed_words.append(s)
         self._words = fixed_words
         return self._words
 
-    def pick_words(self, n, rng):
+    def pick_words(self, n: int, rng: RandomGen) -> list[str]:
         words = self.load_words()
         if len(words) < n:
             raise ValueError("Inte tillräckligt med ord i ordlistan.")
@@ -294,15 +312,19 @@ class WordRepository:
 
 
 class ScoreRepository:
-    def __init__(self, settings, base_path=None, filename=None):
+    def __init__(self, settings: Settings,
+                 base_path: str | Path | None = None,
+                 filename: str | None = None
+                 ) -> None:
+
         self.settings = settings
         self.base_path = Path(base_path or settings.data_dir)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
         filename = filename or settings.score_file
-        self.path = self.base_path / filename
+        self.path: Path = self.base_path / filename
 
-    def load(self):
+    def load(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
 
@@ -319,7 +341,7 @@ class ScoreRepository:
                 raise ValueError("Score filen måste innehålla en lista")
         return data
 
-    def append(self, entry):
+    def append(self, entry: dict[str, Any]) -> None:
         data = self.load()
         data.append(entry)
 
@@ -331,7 +353,7 @@ class ScoreRepository:
 
         tmp.replace(self.path)
 
-    def top(self, difficulty, limit=None):
+    def top(self, difficulty: str, limit: int | None = None) -> list[dict[str, Any]]:
         if self.settings.allowed_difficulties and difficulty not in self.settings.allowed_difficulties:
             raise ValueError(f"Ogiltig svårighetsgrad: {difficulty}")
 
@@ -350,11 +372,11 @@ class ScoreRepository:
 class Settings:
     def __init__(
         self,
-        difficulties=None,
-        words_file="memo.txt",
-        score_file="score.json",
-        data_dir=None,
-    ):
+        difficulties: dict[str, int] | None = None,
+        words_file: str = "memo.txt",
+        score_file: str = "score.json",
+        data_dir: str | Path | None = None,
+    ) -> None:
 
         self.difficulties = difficulties or {"easy": 4, "medium": 6, "hard": 8}
         self.allowed_difficulties = set(self.difficulties.keys())
@@ -365,27 +387,28 @@ class Settings:
 
 
 class RandomGen:
-    def __init__(self, seed=None):
+    def __init__(self, seed: int | None = None):
         if seed is None:
             seed = random.randint(0, 1_000_000)
 
-        self.seed = seed
+        self.seed: int = seed
         self.rng = random.Random(self.seed)
 
-    def get(self, a=0, b=1_000_000):
+    def get(self, a: int = 0, b: int = 1_000_000) -> int:
         return self.rng.randint(a, b)
 
-    def shuffle(self, deck):
+    def shuffle(self, deck: list[str]):
         self.rng.shuffle(deck)
 
-    def sample(self, words, n):
+    def sample(self, words: list[str], n: int):
         return self.rng.sample(words, n)
 
 
-def build_deck(word_repo, n_pairs, rng):
+def build_deck(word_repo: WordRepository, n_pairs: int, rng: RandomGen) -> list[str]:
     if not isinstance(n_pairs, int) or n_pairs < 1:
         raise ValueError("n_pairs måste vara ett heltal ≥ 1")
 
     words = word_repo.pick_words(n_pairs, rng)
-    deck = [w for w in words for _ in (0, 1)]
+    deck = [w for w in words for _ in range(2)]
+    # range(2) för att skapa dubbla ord i listan
     return deck
