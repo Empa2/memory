@@ -91,7 +91,7 @@ def ask_coord(board: Board, prompt: str) -> tuple[int, int]:
         try:
             return board.parse_coord(coord)
         except GameError as e:
-            print(e)
+            print(f"{e}, [q] för att avsluta")
 
 
 def ask_valid_flip(game: Game, board: Board, prompt: str) -> tuple[int, int]:
@@ -290,11 +290,12 @@ def show_result(game: Game, score_repo: ScoreRepository, entry: dict[str, Any]) 
     if not isinstance(difficulty, str):  # Säkerställer att difficulty är str (mypy klagar annrs)
         raise ValueError
     finished_games = score_repo.top(difficulty)
-    position = 1 + next(
-        (i for i, s in enumerate(finished_games)
-         if s.get("game_id") == entry.get("game_id")),
-        len(finished_games)
-    )
+    positions = [
+        i for i, game in enumerate(finished_games)
+        if game.get("game_id") == entry.get("game_id")
+    ]
+    position = positions[0] + 1 if positions else len(finished_games) + 1
+
 
     if game.is_finished():
         print("\nGrattis! Du har klarat spelet!")
@@ -323,6 +324,7 @@ def main() -> None:
     settings = Settings()
     word_repo = WordRepository(settings)
     score_repo = ScoreRepository(settings)
+    print("Välkommen till memory spelet i terminalläge")
     while True:
         print(
             "1. Starta nytt spel\n"

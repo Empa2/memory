@@ -28,5 +28,85 @@
         "finished": false,
         "timestamp": "2025-11-18 14:33:13",
         "seed": 97448
+    },
+    {
+        "game_id": 637486687658505390,
+        "user_name": "gui_test",
+        "moves": 19,
+        "time": 37.55245780944824,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-20 12:41:59",
+        "seed": 840925
+    },
+    {
+        "game_id": 784512482873130706,
+        "user_name": "Hugo",
+        "moves": 17,
+        "time": 41.532487869262695,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-20 12:43:22",
+        "seed": 775909
+    },
+    {
+        "game_id": 320716024397809056,
+        "user_name": "Nr1",
+        "moves": 12,
+        "time": 63.346235036849976,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-20 12:46:37",
+        "seed": 197409
+    },
+    {
+        "game_id": 561002819890214784,
+        "user_name": "Arvid",
+        "moves": 13,
+        "time": 25.634371042251587,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-20 14:07:08",
+        "seed": 123520
+    },
+    {
+        "game_id": 1201496025577224390,
+        "user_name": "Ers majestät",
+        "moves": 11,
+        "time": 28.769632816314697,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-25 14:43:26",
+        "seed": 780572
+    },
+    {
+        "game_id": 993369440143696000,
+        "user_name": "medium-test",
+        "moves": 63,
+        "time": 116.30146908760071,
+        "difficulty": "medium",
+        "finished": true,
+        "timestamp": "2025-11-28 17:15:29",
+        "seed": 924026
+    },
+    {
+        "game_id": 329654067035431064,
+        "user_name": "fi",
+        "moves": 20,
+        "time": 34.4546799659729,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-11-28 17:18:24",
+        "seed": 929884
+    },
+    {
+        "game_id": 1182516024295954230,
+        "user_name": "GUI_TEST",
+        "moves": 19,
+        "time": 29.583544969558716,
+        "difficulty": "easy",
+        "finished": true,
+        "timestamp": "2025-12-09 13:38:23",
+        "seed": 630343
     }
 ]

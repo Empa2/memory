@@ -1,0 +1,97 @@
+         --Tkinter--
+    --Huvudfönster (tk.Tk)--
+tk.Tk() – skapar huvudfönstret.
+title("Text") – sätter fönstrets titel.
+resizable(x, y) – låser/öppnar möjligheten att ändra storlek.
+after(ms, func) – kör func efter ms millisekunder (timer).
+mainloop() – startar Tkinter-händelseloopen.
+destroy() – stänger programmet.
+
+    --Frame--
+ttk.Frame(parent) – container för att organisera widgets.
+Används för att skapa olika ”sidor”: huvudmeny, spel, highscore osv.
+pack_forget() – gömmer ramen.
+
+    --Lable--
+ttk.Label(parent, text=...) – visar text.
+Kan ges font=(familj, storlek, stil).
+
+    --Button--
+ttk.Button(parent, text=..., command=...)
+command= kör en funktion när knappen klickas.
+state="disabled" – avstängd knapp.
+state="normal" – aktiv knapp.
+
+    --LabelFrame--
+ttk.LabelFrame(parent, text="Titel")
+Som Frame, men med en synlig titel runt innehållet.
+
+    --pack()--
+Vanlig för menyer / vertikala listor.
+Vanliga argument:
+fill="x" – fyll horisontellt
+fill="both" – fyll båda håll
+expand=True – låt widgeten ta extra plats
+side="left" – packa från vänster
+padx, pady – marginaler
+
+    --grid()--
+row = ...
+col = ...
+padx, pady
+sticky = "nsew" - fyller i sin cell
+
+Viktigt grid och pack får inte användas i samma Frame
+
+        --Widget-metoder--
+    --config()--
+Ändrar egenskaper efter skapandet:
+text
+btn.config(text="...")
+lable.config(text="...")
+btn.config(state="disabled")
+
+    --destroy()--
+Tar bort widgeten helt.
+
+    --winfo_children()--
+Returnerar alla widgets inuti en Frame.
+Du använder det för att tömma en Frame:
+kan använads t.ex
+    for child in frame.winfo_children():
+        child.destroy()
+
+        --Dialogrutor--
+    --showerror(title, text)--
+visar ett felmeddelande
+
+    --showwarning(title, text)--
+Visar en varning.
+
+    --showinfo(title, text)--
+Visar ett blått infomeddelande.
+
+    --askyesno(title, text)--
+Visar Ja/Nej-dialog.
+Returnerar True eller False.
+
+    --Textinmatning (simpledialog)--
+--askstring(title, prompt)--
+Öppnar en dialog där användaren skriver text.
+
+Returnerar:
+    str med texten
+    None om man trycker Cancel
+    Används för att fråga efter namn.
+
+    --Events via knappar--
+command=...
+Alla knappar har en funktion som körs på tryck.
+När argument behövs används laxmbda:
+t.ex: 
+    command=lambda row=r, col=c: self._on_card_click(row, col)
+
+    --Timers (after)--
+För att uppdatera timer-lable:
+t.ex
+    self.after(200, self._update_timer_lable)
